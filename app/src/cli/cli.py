@@ -47,6 +47,9 @@ class CLI:
         system_prompts = system_prompts or {}
         provider_per_model = provider_per_model or {}
 
+        # Store provider_per_model for validation
+        self.provider_per_model = provider_per_model
+
         match embedding_provider.lower():
 
             case "ollama":
@@ -124,6 +127,7 @@ class CLI:
                 api_key=api_key,
                 models=models,
                 api_key_per_model=api_key_per_model,
+                provider_per_model=self.provider_per_model,
             )
         except ValueError as ve:
             self.ui.error(UI_MESSAGES["errors"]["config_error"].format(ve))
@@ -154,21 +158,38 @@ class CLI:
         api_key,
         models,
         api_key_per_model,
+        provider_per_model,
     ):
         """Validate required configuration for coding."""
 
-        if not api_key and not all(
-            [
-                api_key_per_model.get("code_gen"),
-                api_key_per_model.get("brainstormer"),
-                api_key_per_model.get("web_searcher"),
-                api_key_per_model.get("general"),
-            ]
-        ):
+        # Import provider registry to check which providers need API keys
+        from app.src.providers import get_provider_registry
+
+        registry = get_provider_registry()
+
+        # Check API keys only for providers that require them
+        missing_api_keys = []
+        for agent_type in ["code_gen", "brainstormer", "web_searcher", "general"]:
+            agent_provider = provider_per_model.get(agent_type)
+            agent_api_key = api_key_per_model.get(agent_type)
+
+            # Get provider class to check requirements
+            provider_class = registry.get_provider(agent_provider)
+            if provider_class:
+                provider_instance = provider_class()
+                required_env_vars = provider_instance.get_required_env_vars()
+
+                # Only validate API key if provider requires it
+                if required_env_vars and not agent_api_key:
+                    missing_api_keys.append(f"{agent_type} ({agent_provider})")
+
+        if missing_api_keys:
             raise ValueError(
-                "API key must be provided either as 'api_key' or individual agent API keys"
+                f"API keys required for: {', '.join(missing_api_keys)}. "
+                f"Local providers like Ollama don't need API keys."
             )
 
+        # Model names always required
         if not all(
             [
                 models.get("code_gen"),

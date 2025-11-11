@@ -20,7 +20,8 @@ api_keys = {
     "cerebras": os.getenv("CEREBRAS_API_KEY"),
     "openai": os.getenv("OPENAI_API_KEY"),
     "anthropic": os.getenv("ANTHROPIC_API_KEY"),
-    "google": os.getenv("GOOGLE_GEN_AI_API_KEY")
+    "google": os.getenv("GOOGLE_GEN_AI_API_KEY"),
+    "minimax": os.getenv("MINIMAX_API_KEY")
 }
 
 
@@ -58,6 +59,15 @@ raw_models = config.get("models") or {}
 models = {k: (raw_models.get(k) or model) for k in AGENT_TYPES}
 
 api_key_per_model = {k: api_keys.get(provider_per_model.get(k), api_key) for k in AGENT_TYPES}
+
+# Special handling for MiniMax which requires Group ID in addition to API key
+if provider == "minimax" or "minimax" in provider_per_model.values():
+    group_id = os.getenv("MINIMAX_GROUP_ID")
+    if not group_id:
+        default_ui.warning(
+            "MINIMAX_GROUP_ID environment variable not found. "
+            "MiniMax provider requires a 19-digit Group ID from https://platform.minimax.io/"
+        )
 
 temperatures = config.get("temperatures") or {}
 system_prompts = config.get("system_prompts") or {}

@@ -17,13 +17,20 @@
 
 **Ally** is an AI-powered CLI tool designed to assist with anything from everyday tasks to complex projects efficiently, without leaving the terminal.
 
-Ally was built a fully local agentic system using **[Ollama](https://ollama.com/download)**, but it also works seamlessly with:
+Ally was built as a fully local agentic system using **[Ollama](https://ollama.com/download)**, but features an **extensible provider system** that works seamlessly with:
 
+**Built-in Providers:**
+-   Ollama (local)
 -   OpenAI
--   Anthropic
--   Google GenAI
+-   Anthropic (Claude)
+-   Google GenAI (Gemini)
 -   Cerebras
--   _(more integrations on the way!)_
+
+**Custom Providers:**
+-   MiniMax M2 (included as example)
+-   Easy to add: Groq, Together AI, Perplexity, and more!
+
+**Want to add your own?** See [Adding Custom Providers](#extensible-provider-system) below.
 
 This tool is best suited for scenarios where privacy is paramount and agentic capabilities are needed in the workflow.
 
@@ -87,6 +94,68 @@ Currently, Ally's embedding functions can use:
 
 This workflow is still in its early stages.
 
+## Extensible Provider System
+
+Ally features a plugin-based provider architecture that makes it incredibly easy to add support for new AI models and APIs without touching core code.
+
+### Using Custom Providers
+
+Adding a new provider is as simple as:
+
+1. **Create a provider file** in `app/src/providers/custom/`
+2. **Implement the provider class** (inherit from `BaseProvider`)
+3. **Add API credentials** to `.env`
+4. **Run Ally** - the provider is auto-discovered!
+
+### Example: Using MiniMax M2
+
+MiniMax M2 is included as a ready-to-use custom provider:
+
+1. **Get credentials** from [https://platform.minimax.io/](https://platform.minimax.io/)
+
+2. **Add to `.env`:**
+   ```bash
+   MINIMAX_API_KEY=your_api_key_here
+   MINIMAX_GROUP_ID=your_19_digit_group_id
+   ```
+
+3. **Update `config.json`:**
+   ```json
+   {
+       "provider": "minimax",
+       "model": "minimax-m2"
+   }
+   ```
+
+4. **Run Ally:**
+   ```bash
+   ally
+   ```
+
+That's it! No code changes needed.
+
+### Adding Your Own Providers
+
+Creating a custom provider takes just minutes. Check out the comprehensive guide:
+
+📖 **[Complete Guide: Adding Custom Providers](docs/adding_providers.md)**
+
+The guide includes:
+- Step-by-step provider creation tutorial
+- Complete examples for Groq, Together AI, and LocalAI
+- Troubleshooting tips
+- Best practices
+
+**Popular providers you can add:**
+- Groq (ultra-fast inference)
+- Together AI
+- Perplexity AI
+- Replicate
+- HuggingFace Inference API
+- Any OpenAI-compatible API
+
+Each provider takes ~30 lines of code and is automatically discovered!
+
 ## Setup
 
 You have 2 options: Via Docker or locally on your machine.
@@ -102,6 +171,11 @@ OPENAI_API_KEY=...
 ANTHROPIC_API_KEY=...
 GOOGLE_GEN_AI_API_KEY=...
 CEREBRAS_API_KEY=...
+
+# MiniMax M2 (Optional - high-performance coding model)
+
+MINIMAX_API_KEY=...
+MINIMAX_GROUP_ID=...  # 19-digit account identifier
 
 # Embedding providers APIs (As needed. Only add those you need.)
 
@@ -177,6 +251,9 @@ This file (located at `Ally/`) controls Ally's main settings and integrations.
 
 ```json
 {
+    // Ally supports extensible providers. Use any built-in provider
+    // (ollama, openai, anthropic, google, cerebras) or add custom providers
+    // like "minimax" to app/src/providers/custom/
     "provider": "openai",
     "provider_per_model": {
         "general": "ollama",
@@ -230,6 +307,11 @@ ANTHROPIC_API_KEY=...
 GOOGLE_GEN_AI_API_KEY=...
 CEREBRAS_API_KEY=...
 
+# MiniMax M2 (Optional - high-performance coding model)
+
+MINIMAX_API_KEY=...
+MINIMAX_GROUP_ID=...  # 19-digit account identifier
+
 # Embedding providers APIs (As needed. Only add those you need.)
 
 NLP_CLOUD_API_KEY=...
@@ -282,6 +364,8 @@ Linux & MacOS:
 3. To save a chat, use /id to view the conversation ID. The next time you open Ally, continue the conversation by using the -i flag followed by the ID. You can do the same inside the CLI, just do `/id <your_id>`
 
 4. Embedding and scraping files that require OCR (such as PDFs and DOCX) currently use a CPU-only PyTorch installation. You can modify the configuration to utilize a GPU if desired, though this is typically only necessary for processing very large files.
+
+5. **Custom Providers**: Ally's provider system supports auto-discovery of custom providers. Simply add your provider file to `app/src/providers/custom/` and it will be automatically loaded on startup. See [docs/adding_providers.md](docs/adding_providers.md) for complete instructions on creating custom providers.
 
 ## License
 

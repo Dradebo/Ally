@@ -1,6 +1,7 @@
 from app.utils.constants import DEFAULT_PATHS, LAST_N_TURNS
 from app.src.helpers.valid_dir import validate_dir_name
 from app.src.core.ui import default_ui
+from app.src.providers import get_provider_registry
 from langgraph.graph.state import CompiledStateGraph
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.graph.message import add_messages
@@ -47,61 +48,45 @@ def create_base_agent(
     """
     llm = None
 
-    match provider.lower():
-        case "cerebras":
-            from langchain_cerebras import ChatCerebras
+    # Get provider registry
+    registry = get_provider_registry()
 
-            llm = ChatCerebras(
-                model=model_name,
+    # Try to get provider from registry
+    provider_class = registry.get_provider(provider)
+
+    if provider_class:
+        # Use new provider plugin system
+        provider_instance = provider_class()
+
+        # Validate configuration
+        config = {
+            "model_name": model_name,
+            "api_key": api_key,
+        }
+        is_valid, error_msg = provider_instance.validate_config(config)
+
+        # For providers that don't require API keys (like Ollama), allow continuation
+        if not is_valid and provider_instance.get_required_env_vars():
+            default_ui.warning(f"Provider validation warning: {error_msg}")
+
+        # Create LLM instance using the provider
+        try:
+            llm = provider_instance.create_llm(
+                model_name=model_name,
                 temperature=temperature,
-                timeout=None,
-                max_retries=5,
                 api_key=api_key,
             )
-        case "ollama":
-            from langchain_ollama import ChatOllama
-
-            llm = ChatOllama(
-                model=model_name,
-                temperature=temperature,
-                validate_model_on_init=True,
-                reasoning=False,
+        except Exception as e:
+            raise ValueError(
+                f"Failed to create LLM for provider '{provider}': {str(e)}"
             )
-        case "google":
-            os.environ["GRPC_VERBOSITY"] = "NONE"
-            os.environ["GRPC_CPP_VERBOSITY"] = "NONE"
-            
-            from langchain_google_genai import ChatGoogleGenerativeAI
-
-            llm = ChatGoogleGenerativeAI(
-                model=model_name,
-                temperature=temperature,
-                timeout=None,
-                max_retries=5,
-                google_api_key=api_key,
-            )
-        case "openai":
-            from langchain_openai import ChatOpenAI
-
-            llm = ChatOpenAI(
-                model=model_name,
-                temperature=temperature,
-                timeout=None,
-                max_retries=5,
-                api_key=api_key,
-            )
-        case "anthropic":
-            from langchain_anthropic import ChatAnthropic
-
-            llm = ChatAnthropic(
-                model=model_name,
-                temperature=temperature,
-                timeout=None,
-                max_retries=5,
-                api_key=api_key,
-            )
-        case _:
-            raise ValueError(f"Unsupported inference provider: {provider}")
+    else:
+        # Provider not found in registry
+        available_providers = registry.list_providers()
+        raise ValueError(
+            f"Unknown provider: {provider}. "
+            f"Available providers: {', '.join(available_providers)}"
+        )
 
     template = ChatPromptTemplate.from_messages(
         [

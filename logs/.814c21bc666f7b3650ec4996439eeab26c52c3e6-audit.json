@@ -1,0 +1,25 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/Users/sean/Documents/GitHub/Ally/logs/.814c21bc666f7b3650ec4996439eeab26c52c3e6-audit.json",
+    "files": [
+        {
+            "date": 1761570254817,
+            "name": "/Users/sean/Documents/GitHub/Ally/logs/mcp-puppeteer-2025-10-27.log",
+            "hash": "d17ee628f0017c413ec05307eff44bf70d7b2a49a5574ab70503d135cfc216e4"
+        },
+        {
+            "date": 1761628677427,
+            "name": "/Users/sean/Documents/GitHub/Ally/logs/mcp-puppeteer-2025-10-28.log",
+            "hash": "c4fa4c3323565a289e6ea1163f1b44ae43daf3d283b46259499c76465459d823"
+        },
+        {
+            "date": 1762778068033,
+            "name": "/Users/sean/Documents/GitHub/Ally/logs/mcp-puppeteer-2025-11-10.log",
+            "hash": "74d4beb26319912821e25b3e15aea90016838747e2ac4ee938237f6fc228d9cf"
+        }
+    ],
+    "hashType": "sha256"
+}
